@@ -10,7 +10,11 @@ import { useGetGroceries } from './utils/hooks/useGetGroceries';
 function App() {
   const { activeTab } = useTabStore();
 
-  const { data: groceries, isLoading } = useGetGroceries({
+  const {
+    data: groceries,
+    isLoading,
+    refetch,
+  } = useGetGroceries({
     type: activeTab,
   });
 
@@ -26,9 +30,19 @@ function App() {
         >
           <Header />
           {activeTab === 'to-buy' && (
-            <ToBuyTab data={groceries} isLoading={isLoading} />
+            <ToBuyTab
+              data={groceries}
+              isLoadingGroceries={isLoading}
+              refetchGrocery={refetch}
+            />
           )}
-          {activeTab === 'bought' && <BoughtTab />}
+          {activeTab === 'bought' && (
+            <BoughtTab
+              data={groceries}
+              isLoadingGroceries={isLoading}
+              refetchGrocery={refetch}
+            />
+          )}
         </div>
       </main>
     </>

@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countGroceries = `-- name: CountGroceries :one
@@ -23,6 +25,27 @@ func (q *Queries) CountGroceries(ctx context.Context, dollar_1 bool) (int64, err
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const createGrocery = `-- name: CreateGrocery :one
+INSERT INTO grocery_items(
+	name)
+	VALUES ($1)
+RETURNING id, name, created_at, deleted_at, bought_at, updated_at
+`
+
+func (q *Queries) CreateGrocery(ctx context.Context, name pgtype.Text) (GroceryItem, error) {
+	row := q.db.QueryRow(ctx, createGrocery, name)
+	var i GroceryItem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.DeletedAt,
+		&i.BoughtAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getGroceries = `-- name: GetGroceries :many

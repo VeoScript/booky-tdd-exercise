@@ -3,20 +3,28 @@ import { useState } from 'react';
 import InputWithButton from '../inputs/input-with-button';
 import NoResults from '../no-results';
 import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
+
 import { GroceriesResponse } from '../../utils/hooks/useGetGroceries';
+import { useCreateGrocery } from '../../utils/hooks/useCreateGrocery';
 
 interface Props {
   data: GroceriesResponse | undefined;
-  isLoading: boolean;
+  isLoadingGroceries: boolean;
+  refetchGrocery: () => void;
 }
 
 function ToBuyTab(props: Props) {
-  const { data, isLoading } = props;
+  const { data, isLoadingGroceries, refetchGrocery } = props;
 
+  const groceries = data?.results;
+  const groceriesCount = data?.metadata?.total_count;
+
+  const [groceryName, setGroceryName] = useState('');
   const [editingID, setEditingID] = useState<string | null>(null);
   const [editedName, setEditedName] = useState('');
 
-  const groceries = data?.results;
+  const { mutateAsync: createGroceryMutation, isPending: isCreatingGrocery } =
+    useCreateGrocery();
 
   const handleEditClick = (id: string, name: string) => {
     setEditingID(id);
@@ -33,29 +41,53 @@ function ToBuyTab(props: Props) {
     setEditedName('');
   };
 
+  const handleCreateGrocery = async () => {
+    try {
+      await createGroceryMutation({
+        name: groceryName,
+      });
+
+      setGroceryName('');
+      refetchGrocery();
+    } catch (error) {
+      console.error('CREATE_GROCERY_ERROR', error);
+    }
+  };
+
+  const buttonLabel = isCreatingGrocery ? 'Adding...' : 'Add';
+
   return (
     <div className="flex w-full flex-col gap-y-10 p-3">
       <InputWithButton
         inputProps={{
           type: 'text',
           placeholder: 'Type something...',
+          value: groceryName,
+          onChange: (e) => setGroceryName(e.target.value),
         }}
         buttonProps={{
           type: 'button',
           'aria-label': 'Add grocery item',
+          onClick: handleCreateGrocery,
         }}
-        buttonLabel="Add"
+        buttonLabel={buttonLabel}
       />
       <div className="flex w-full flex-col gap-y-3">
-        {isLoading && <div>Loading...</div>}
-        {!isLoading && groceries && (
+        {isLoadingGroceries && (
+          <div className="flex w-full flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold text-default-orange/50">
+              Loading...
+            </h2>
+          </div>
+        )}
+        {!isLoadingGroceries && groceries && (
           <>
             {groceries.length === 0 && (
               <NoResults title="Nothing here yet..." />
             )}
             {groceries.length > 0 && (
               <div className="flex w-full flex-col gap-y-3">
-                <h3 className="text-default-gray">{groceries.length} items</h3>
+                <h3 className="text-default-gray">{groceriesCount} items</h3>
                 {groceries.map(({ ID, Name }) => (
                   <div
                     key={ID}

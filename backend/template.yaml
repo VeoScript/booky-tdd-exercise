@@ -5,6 +5,19 @@ Description: >
 
   Sample SAM Template for backend
 
+Parameters:
+  DatabaseUrl:
+    Type: String
+  CorsAllowedOrigins:
+    Type: String
+    Default: "*"
+  CorsAllowedMethods:
+    Type: String
+    Default: "POST,GET,PUT,PATCH,DELETE,OPTIONS"
+  CorsAllowedHeaders:
+    Type: String
+    Default: "Access-Control-Allow-Headers,Origin,Accept,X-Requested-With,Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers,X-Api-Key"
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -12,31 +25,17 @@ Globals:
     MemorySize: 128
     Environment:
       Variables:
-        DATABASE_URL: !Ref DATABASE_URL
-        CORS_ALLOWED_HEADERS: !Ref CORS_ALLOWED_HEADERS
-        CORS_ALLOWED_METHODS: !Ref CORS_ALLOWED_METHODS
-        CORS_ALLOWED_ORIGINS: !Ref CORS_ALLOWED_ORIGINS
+        DATABASE_URL: !Ref DatabaseUrl
+        CORS_ALLOWED_HEADERS: !Ref CorsAllowedHeaders
+        CORS_ALLOWED_METHODS: !Ref CorsAllowedMethods
+        CORS_ALLOWED_ORIGINS: !Ref CorsAllowedOrigins
+  Api:
+    Cors:
+      AllowMethods: !Join ["", ["'", !Ref CorsAllowedMethods, "'"]]
+      AllowOrigin: !Join ["", ["'", !Ref CorsAllowedOrigins, "'"]]
+      AllowHeaders: !Join ["", ["'", !Ref CorsAllowedHeaders, "'"]]
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Metadata:
-      BuildMethod: go1.x
-    Properties:
-      CodeUri: functions/hello-world/
-      Handler: bootstrap
-      Runtime: provided.al2023
-      Architectures:
-        - x86_64
-      Events:
-        CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /hello
-            Method: GET
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
-        Variables:
-          PARAM1: VALUE
   GetGroceriesV1:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Metadata:
@@ -53,16 +52,19 @@ Resources:
           Properties:
             Path: /v1/items
             Method: GET
-Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldAPI:
-    Description: "API Gateway endpoint URL for Prod environment for First Function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "First Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  CreateGroceryV1:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      CodeUri: functions/CreateGroceryV1/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /v1/items
+            Method: POST
