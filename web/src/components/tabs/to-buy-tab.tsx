@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import dayjs from 'dayjs';
 
+import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
+
+import LoadingSpinner from '../loading-spinner';
 import InputWithButton from '../inputs/input-with-button';
 import NoResults from '../no-results';
-import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
 
 import { GroceriesResponse } from '../../utils/hooks/useGetGroceries';
 import { useCreateGrocery } from '../../utils/hooks/useCreateGrocery';
 import { useUpdateGrocery } from '../../utils/hooks/useUpdateGrocery';
+import { useUpdateToBuy } from '../../utils/hooks/useUpdateToBuy';
 
 interface Props {
   data: GroceriesResponse | undefined;
@@ -21,6 +25,7 @@ function ToBuyTab(props: Props) {
   const groceriesCount = data?.metadata?.total_count;
 
   const [groceryName, setGroceryName] = useState('');
+  const [loadingID, setLoadingID] = useState<string | null>('');
   const [editingID, setEditingID] = useState<string | null>(null);
   const [editedName, setEditedName] = useState('');
 
@@ -28,6 +33,8 @@ function ToBuyTab(props: Props) {
     useCreateGrocery();
   const { mutateAsync: updateGroceryMutation, isPending: isUpdatingGrocery } =
     useUpdateGrocery();
+  const { mutateAsync: updateToBuyMutation, isPending: isUpdatingToBuy } =
+    useUpdateToBuy();
 
   const handleEditClick = (id: string, name: string) => {
     setEditingID(id);
@@ -36,12 +43,15 @@ function ToBuyTab(props: Props) {
 
   const handleSave = async (id: string) => {
     try {
+      setLoadingID(id);
+
       await updateGroceryMutation({
         id,
         name: editedName,
       });
 
       setEditingID(null);
+      setLoadingID(null);
       refetchGrocery();
     } catch (error) {
       console.error('UPDATE_GROCERY_ERROR', error);
@@ -66,6 +76,26 @@ function ToBuyTab(props: Props) {
     }
   };
 
+  const handleUpdateToBuy = async (id: string) => {
+    try {
+      const boughtAt = dayjs(new Date()).toISOString();
+
+      setLoadingID(id);
+
+      await updateToBuyMutation({
+        id,
+        bought_at: boughtAt,
+      });
+
+      setLoadingID(null);
+      refetchGrocery();
+    } catch (error) {
+      console.error('CREATE_GROCERY_ERROR', error);
+    }
+  };
+
+  const isLoadingAll =
+    isCreatingGrocery || isUpdatingGrocery || isUpdatingToBuy;
   const buttonLabel = isCreatingGrocery ? 'Adding...' : 'Add';
 
   return (
@@ -107,51 +137,63 @@ function ToBuyTab(props: Props) {
                   >
                     {editingID === ID ? (
                       <input
-                        disabled={isUpdatingGrocery}
+                        disabled={isUpdatingGrocery || isUpdatingToBuy}
                         type="text"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
-                        className="flex-grow outline-none"
+                        className="flex-grow outline-none disabled:bg-transparent"
                       />
                     ) : (
                       <span>{Name}</span>
                     )}
                     <span className="flex flex-row items-center gap-x-3">
-                      {editingID === ID && (
-                        <>
-                          <button
-                            disabled={isUpdatingGrocery}
-                            type="button"
-                            aria-label="Save button"
-                            onClick={() => handleSave(ID)}
-                          >
-                            <CheckIcon className="h-5 w-5 text-default-gray hover:text-green-600 hover:opacity-50" />
-                          </button>
-                          <button
-                            disabled={isUpdatingGrocery}
-                            type="button"
-                            aria-label="Cancel button"
-                            onClick={handleCancel}
-                          >
-                            <ClearIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
-                          </button>
-                        </>
+                      {isLoadingAll && loadingID === ID && (
+                        <LoadingSpinner className="h-5 w-5" />
                       )}
-                      {editingID !== ID && (
+                      {loadingID !== ID && (
                         <>
-                          <button type="button" aria-label="Done button">
-                            <CheckIcon className="h-5 w-5 text-default-gray hover:text-default-orange hover:opacity-50" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Edit button"
-                            onClick={() => handleEditClick(ID, Name)}
-                          >
-                            <EditIcon className="h-5 w-5 text-default-gray hover:text-blue-600 hover:opacity-50" />
-                          </button>
-                          <button type="button" aria-label="Delete button">
-                            <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
-                          </button>
+                          {editingID === ID && (
+                            <>
+                              <button
+                                disabled={isUpdatingGrocery}
+                                type="button"
+                                aria-label="Save button"
+                                onClick={() => handleSave(ID)}
+                              >
+                                <CheckIcon className="h-5 w-5 text-default-gray hover:text-green-600 hover:opacity-50" />
+                              </button>
+                              <button
+                                disabled={isUpdatingGrocery}
+                                type="button"
+                                aria-label="Cancel button"
+                                onClick={handleCancel}
+                              >
+                                <ClearIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
+                              </button>
+                            </>
+                          )}
+                          {editingID !== ID && (
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Update to buy button"
+                                onClick={() => handleUpdateToBuy(ID)}
+                              >
+                                <CheckIcon className="h-5 w-5 text-default-gray hover:text-default-orange hover:opacity-50" />
+                              </button>
+                              <button
+                                disabled={isUpdatingToBuy}
+                                type="button"
+                                aria-label="Edit grocery list button"
+                                onClick={() => handleEditClick(ID, Name)}
+                              >
+                                <EditIcon className="h-5 w-5 text-default-gray hover:text-blue-600 hover:opacity-50" />
+                              </button>
+                              <button type="button" aria-label="Delete button">
+                                <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </span>

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -19,7 +20,8 @@ import (
 var dbPool *pgxpool.Pool
 
 type Grocery struct {
-	Name string `json:"name"`
+	ID       string    `json:"id"`
+	BoughtAt time.Time `json:"bought_at"`
 }
 
 func init() {
@@ -54,23 +56,30 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			http.StatusBadRequest,
 			apigw.ErrorResponseBody{
 				Message: err.Error(),
-				Code:    "UPDATE_GROCERY_PAYLOAD_ERROR",
+				Code:    "TO_BUY_GROCERY_PAYLOAD_ERROR",
 			},
 		)
 	}
 
+	var boughtAt pgtype.Timestamp
+	if grocery.BoughtAt.IsZero() {
+		boughtAt = pgtype.Timestamp{}
+	} else {
+		boughtAt.Scan(grocery.BoughtAt)
+	}
+
 	queries := database.New(dbPool)
-	err = queries.UpdateGrocery(context.Background(), database.UpdateGroceryParams{
-		ID:   uuid,
-		Name: helpers.ToNullableText(grocery.Name),
+	err = queries.ToBuy(context.Background(), database.ToBuyParams{
+		ID:       uuid,
+		BoughtAt: boughtAt,
 	})
 	if err != nil {
-		logs.Error("UPDATE_GROCERY_QUERY_ERROR", err.Error())
+		logs.Error("TO_BUY_GROCERY_QUERY_ERROR", err.Error())
 		return apigw.SingleErrorResponse(
 			http.StatusInternalServerError,
 			apigw.ErrorResponseBody{
 				Message: err.Error(),
-				Code:    "UPDATE_GROCERY_QUERY_ERROR",
+				Code:    "TO_BUY_GROCERY_QUERY_ERROR",
 			},
 		)
 	}

@@ -25,6 +25,20 @@ RETURNING *;
 -- name: UpdateGrocery :exec
 UPDATE grocery_items
 SET 
-    name = $1
+  name = $1
 WHERE id = $2
 RETURNING id, name;
+
+-- name: ToBuy :exec
+UPDATE grocery_items
+SET 
+  bought_at = $1
+WHERE id = $2
+RETURNING id, name, bought_at;
+
+-- name: ToRestore :exec
+UPDATE grocery_items
+SET 
+  bought_at = null
+WHERE id = $1
+RETURNING id, name, bought_at;
