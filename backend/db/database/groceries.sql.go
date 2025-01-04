@@ -92,10 +92,41 @@ func (q *Queries) GetGroceries(ctx context.Context, arg GetGroceriesParams) ([]G
 	return items, nil
 }
 
+const toBuy = `-- name: ToBuy :exec
+UPDATE grocery_items
+SET 
+  bought_at = $1
+WHERE id = $2
+RETURNING id, name, bought_at
+`
+
+type ToBuyParams struct {
+	BoughtAt pgtype.Timestamp
+	ID       pgtype.UUID
+}
+
+func (q *Queries) ToBuy(ctx context.Context, arg ToBuyParams) error {
+	_, err := q.db.Exec(ctx, toBuy, arg.BoughtAt, arg.ID)
+	return err
+}
+
+const toRestore = `-- name: ToRestore :exec
+UPDATE grocery_items
+SET 
+  bought_at = null
+WHERE id = $1
+RETURNING id, name, bought_at
+`
+
+func (q *Queries) ToRestore(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, toRestore, id)
+	return err
+}
+
 const updateGrocery = `-- name: UpdateGrocery :exec
 UPDATE grocery_items
 SET 
-    name = $1
+  name = $1
 WHERE id = $2
 RETURNING id, name
 `

@@ -13,6 +13,7 @@ func GetPage(pageStr string) int {
 
 	return pageInt
 }
+
 func GetItemsPerPage(itemsStr string) int {
 	itemsInt, err := strconv.Atoi(itemsStr)
 	if err != nil {

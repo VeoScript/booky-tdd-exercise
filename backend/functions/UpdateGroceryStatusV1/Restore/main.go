@@ -4,7 +4,6 @@ import (
 	"backend/db/database"
 	"backend/helpers"
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -17,10 +16,6 @@ import (
 )
 
 var dbPool *pgxpool.Pool
-
-type Grocery struct {
-	Name string `json:"name"`
-}
 
 func init() {
 	var err error
@@ -47,30 +42,15 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		)
 	}
 
-	grocery := Grocery{}
-	if err := json.Unmarshal([]byte(request.Body), &grocery); err != nil {
-		logs.Error("json.Unmarshal", err.Error())
-		return apigw.SingleErrorResponse(
-			http.StatusBadRequest,
-			apigw.ErrorResponseBody{
-				Message: err.Error(),
-				Code:    "UPDATE_GROCERY_PAYLOAD_ERROR",
-			},
-		)
-	}
-
 	queries := database.New(dbPool)
-	err = queries.UpdateGrocery(context.Background(), database.UpdateGroceryParams{
-		ID:   uuid,
-		Name: helpers.ToNullableText(grocery.Name),
-	})
+	err = queries.ToRestore(context.Background(), uuid)
 	if err != nil {
-		logs.Error("UPDATE_GROCERY_QUERY_ERROR", err.Error())
+		logs.Error("TO_RESTORE_GROCERY_QUERY_ERROR", err.Error())
 		return apigw.SingleErrorResponse(
 			http.StatusInternalServerError,
 			apigw.ErrorResponseBody{
 				Message: err.Error(),
-				Code:    "UPDATE_GROCERY_QUERY_ERROR",
+				Code:    "TO_RESTORE_GROCERY_QUERY_ERROR",
 			},
 		)
 	}
