@@ -8,6 +8,6 @@ export interface TabState {
 }
 
 export const useTabStore = create<TabState>((set) => ({
-  activeTab: 'bought',
+  activeTab: 'to-buy',
   setActiveTab: (tab) => set({ activeTab: tab }),
 }));
