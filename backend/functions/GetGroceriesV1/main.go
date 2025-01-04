@@ -28,11 +28,11 @@ func init() {
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	logs.Request = request
 	page := helpers.GetPage(request.QueryStringParameters["page"])
-	items := helpers.GetItemsPerPage(request.QueryStringParameters["items"])
+	limit := helpers.GetItemsPerPage(request.QueryStringParameters["limit"])
 	groceryType := request.QueryStringParameters["type"]
 
-	var pageOffset = helpers.ComputePageOffset(page, items)
-	var resultsPerPage = int32(items)
+	var pageOffset = helpers.ComputePageOffset(page, limit)
+	var resultsPerPage = int32(limit)
 
 	var filterGroceryType bool
 	if groceryType == "bought" {
@@ -84,7 +84,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		groceries,
 		map[string]any{
 			"total_count":      int(count),
-			"results_per_page": int(items),
+			"results_per_page": resultsPerPage,
 			"page":             page,
 		},
 	)
