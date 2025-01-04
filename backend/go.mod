@@ -23,9 +23,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.3 // indirect
 	github.com/aws/smithy-go v1.22.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/scrambledeggs/booky-go-common/apigatewayresponse v0.0.0-20241113095159-4ec633d7229e // indirect
 	github.com/scrambledeggs/booky-go-common/logs v0.0.0-20241113095159-4ec633d7229e // indirect
 	golang.org/x/crypto v0.31.0 // indirect

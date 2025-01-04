@@ -6,6 +6,7 @@ import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
 
 import { GroceriesResponse } from '../../utils/hooks/useGetGroceries';
 import { useCreateGrocery } from '../../utils/hooks/useCreateGrocery';
+import { useUpdateGrocery } from '../../utils/hooks/useUpdateGrocery';
 
 interface Props {
   data: GroceriesResponse | undefined;
@@ -25,15 +26,26 @@ function ToBuyTab(props: Props) {
 
   const { mutateAsync: createGroceryMutation, isPending: isCreatingGrocery } =
     useCreateGrocery();
+  const { mutateAsync: updateGroceryMutation, isPending: isUpdatingGrocery } =
+    useUpdateGrocery();
 
   const handleEditClick = (id: string, name: string) => {
     setEditingID(id);
     setEditedName(name);
   };
 
-  const handleSave = (id: string) => {
-    console.log('Saved:', id, editedName);
-    setEditingID(null);
+  const handleSave = async (id: string) => {
+    try {
+      await updateGroceryMutation({
+        id,
+        name: editedName,
+      });
+
+      setEditingID(null);
+      refetchGrocery();
+    } catch (error) {
+      console.error('UPDATE_GROCERY_ERROR', error);
+    }
   };
 
   const handleCancel = () => {
@@ -95,6 +107,7 @@ function ToBuyTab(props: Props) {
                   >
                     {editingID === ID ? (
                       <input
+                        disabled={isUpdatingGrocery}
                         type="text"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
@@ -107,6 +120,7 @@ function ToBuyTab(props: Props) {
                       {editingID === ID && (
                         <>
                           <button
+                            disabled={isUpdatingGrocery}
                             type="button"
                             aria-label="Save button"
                             onClick={() => handleSave(ID)}
@@ -114,6 +128,7 @@ function ToBuyTab(props: Props) {
                             <CheckIcon className="h-5 w-5 text-default-gray hover:text-green-600 hover:opacity-50" />
                           </button>
                           <button
+                            disabled={isUpdatingGrocery}
                             type="button"
                             aria-label="Cancel button"
                             onClick={handleCancel}

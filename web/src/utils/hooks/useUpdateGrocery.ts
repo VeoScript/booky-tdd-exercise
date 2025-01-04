@@ -4,6 +4,7 @@ import { Groceries } from './useGetGroceries';
 const API_URL = import.meta.env.VITE_API_URL;
 
 type Payload = {
+  id: string;
   name: string;
 };
 
@@ -14,28 +15,32 @@ export type MutationParams = {
   isError: boolean;
 };
 
-export const createGrocery = async (payload: Payload): Promise<Groceries> => {
-  const url = `${API_URL}/v1/items`;
+export const updateGrocery = async (payload: Payload): Promise<Groceries> => {
+  const { id, name } = payload;
+
+  const url = `${API_URL}/v1/items/${id}`;
 
   const response = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify(payload),
+    method: 'PATCH',
+    body: JSON.stringify({
+      name,
+    }),
     headers: {
       'Content-type': 'application/json',
     },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create grocery list');
+    throw new Error('Failed to update grocery list');
   }
 
   return response.json();
 };
 
-export const useCreateGrocery = (): MutationParams => {
+export const useUpdateGrocery = (): MutationParams => {
   const { mutate, mutateAsync, isPending, isError } = useMutation({
-    mutationFn: createGrocery,
-    mutationKey: ['createGrocery'],
+    mutationFn: updateGrocery,
+    mutationKey: ['updateGrocery'],
   });
 
   return { mutate, mutateAsync, isPending, isError };

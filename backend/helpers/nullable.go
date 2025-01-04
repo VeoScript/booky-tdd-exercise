@@ -7,10 +7,10 @@ import (
 )
 
 func ToNullableText(s string) pgtype.Text {
-	return pgtype.Text{
-		String: s,
-		Valid:  s != "",
+	if s == "" {
+		return pgtype.Text{Valid: false}
 	}
+	return pgtype.Text{String: s, Valid: true}
 }
 
 func PtrOrNil(t time.Time) *time.Time {

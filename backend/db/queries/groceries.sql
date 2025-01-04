@@ -21,3 +21,10 @@ INSERT INTO grocery_items(
 	name)
 	VALUES ($1)
 RETURNING *;
+
+-- name: UpdateGrocery :exec
+UPDATE grocery_items
+SET 
+    name = $1
+WHERE id = $2
+RETURNING id, name;
