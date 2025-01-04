@@ -91,3 +91,21 @@ func (q *Queries) GetGroceries(ctx context.Context, arg GetGroceriesParams) ([]G
 	}
 	return items, nil
 }
+
+const updateGrocery = `-- name: UpdateGrocery :exec
+UPDATE grocery_items
+SET 
+    name = $1
+WHERE id = $2
+RETURNING id, name
+`
+
+type UpdateGroceryParams struct {
+	Name pgtype.Text
+	ID   pgtype.UUID
+}
+
+func (q *Queries) UpdateGrocery(ctx context.Context, arg UpdateGroceryParams) error {
+	_, err := q.db.Exec(ctx, updateGrocery, arg.Name, arg.ID)
+	return err
+}

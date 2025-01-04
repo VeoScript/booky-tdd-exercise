@@ -68,3 +68,19 @@ Resources:
           Properties:
             Path: /v1/items
             Method: POST
+  UpdateGroceryV1:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      CodeUri: functions/UpdateGroceryV1/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /v1/items/{id}
+            Method: PATCH
