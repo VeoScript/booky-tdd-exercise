@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { useTabStore, Tabs } from '../utils/stores/useTabStore';
+import { useTabStore } from '../utils/stores/useTabStore';
 
 function Header() {
   const { activeTab, setActiveTab } = useTabStore();
@@ -12,10 +12,10 @@ function Header() {
       scrollableContainer.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    if (activeTab === Tabs.TO_BUY) {
-      setActiveTab(Tabs.BOUGHT);
-    } else if (activeTab === Tabs.BOUGHT) {
-      setActiveTab(Tabs.TO_BUY);
+    if (activeTab === 'to-buy') {
+      setActiveTab('bought');
+    } else if (activeTab === 'bought') {
+      setActiveTab('to-buy');
     }
   };
 
@@ -27,7 +27,7 @@ function Header() {
           type="button"
           aria-label="To Buy Tab"
           className={clsx(
-            activeTab === Tabs.TO_BUY &&
+            activeTab === 'to-buy' &&
               'border-default-orange text-default-orange',
             'upercase w-full border-b-2 pb-2'
           )}
@@ -39,7 +39,7 @@ function Header() {
           type="button"
           aria-label="Bought Tab"
           className={clsx(
-            activeTab === Tabs.BOUGHT &&
+            activeTab === 'bought' &&
               'border-default-orange text-default-orange',
             'upercase w-full border-b-2 pb-2'
           )}

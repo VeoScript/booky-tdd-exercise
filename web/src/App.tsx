@@ -4,10 +4,15 @@ import Header from './components/header';
 import ToBuyTab from './components/tabs/to-buy-tab';
 import BoughtTab from './components/tabs/bought-tab';
 
-import { useTabStore, Tabs } from './utils/stores/useTabStore';
+import { useTabStore } from './utils/stores/useTabStore';
+import { useGetGroceries } from './utils/hooks/useGetGroceries';
 
 function App() {
   const { activeTab } = useTabStore();
+
+  const { data: groceries, isLoading } = useGetGroceries({
+    type: activeTab,
+  });
 
   return (
     <>
@@ -20,8 +25,10 @@ function App() {
           className="relative my-0 h-full w-full max-w-xl overflow-y-auto rounded-none border-0 bg-white md:my-10 md:rounded-xl md:border-2 md:border-default-gray"
         >
           <Header />
-          {activeTab === Tabs.TO_BUY && <ToBuyTab />}
-          {activeTab === Tabs.BOUGHT && <BoughtTab />}
+          {activeTab === 'to-buy' && (
+            <ToBuyTab data={groceries} isLoading={isLoading} />
+          )}
+          {activeTab === 'bought' && <BoughtTab />}
         </div>
       </main>
     </>

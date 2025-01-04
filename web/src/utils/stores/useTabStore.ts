@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 
-export enum Tabs {
-  TO_BUY = 'to_buy',
-  BOUGHT = 'bought',
-}
+export type Tabs = 'to-buy' | 'bought';
 
 export interface TabState {
   activeTab: Tabs;
@@ -11,6 +8,6 @@ export interface TabState {
 }
 
 export const useTabStore = create<TabState>((set) => ({
-  activeTab: Tabs.TO_BUY,
+  activeTab: 'bought',
   setActiveTab: (tab) => set({ activeTab: tab }),
 }));
