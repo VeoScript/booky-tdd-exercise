@@ -2,9 +2,12 @@
 SELECT * 
 FROM grocery_items
 WHERE 
-  ($1::boolean IS NULL AND bought_at IS NULL)
-  OR ($1::boolean = TRUE AND bought_at IS NOT NULL)
-  OR ($1::boolean = FALSE AND bought_at IS NULL)  
+  (($4::boolean = TRUE AND deleted_at IS NOT NULL) OR ($4 = FALSE AND deleted_at IS NULL) OR $4 IS NULL)
+  AND (
+    ($1::boolean IS NULL AND bought_at IS NULL)
+    OR ($1 = TRUE AND bought_at IS NOT NULL)
+    OR ($1 = FALSE AND bought_at IS NULL)
+  )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -12,9 +15,12 @@ LIMIT $2 OFFSET $3;
 SELECT COUNT(*) 
 FROM grocery_items
 WHERE 
-  ($1::boolean IS NULL AND bought_at IS NULL) 
-  OR ($1::boolean = TRUE AND bought_at IS NOT NULL)
-  OR ($1::boolean = FALSE AND bought_at IS NULL);
+  (($2::boolean = TRUE AND deleted_at IS NOT NULL) OR ($2 = FALSE AND deleted_at IS NULL) OR $2 IS NULL)
+  AND (
+    ($1::boolean IS NULL AND bought_at IS NULL)
+    OR ($1 = TRUE AND bought_at IS NOT NULL)
+    OR ($1 = FALSE AND bought_at IS NULL)
+  );
 
 -- name: CreateGrocery :one
 INSERT INTO grocery_items(
@@ -26,19 +32,22 @@ RETURNING *;
 UPDATE grocery_items
 SET 
   name = $1
-WHERE id = $2
-RETURNING id, name;
+WHERE id = $2;
 
 -- name: ToBuy :exec
 UPDATE grocery_items
 SET 
   bought_at = $1
-WHERE id = $2
-RETURNING id, name, bought_at;
+WHERE id = $2;
 
 -- name: ToRestore :exec
 UPDATE grocery_items
 SET 
   bought_at = null
-WHERE id = $1
-RETURNING id, name, bought_at;
+WHERE id = $1;
+
+-- name: ToDelete :exec
+UPDATE grocery_items
+SET 
+  deleted_at = $1
+WHERE id = $2;

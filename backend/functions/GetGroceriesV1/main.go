@@ -6,6 +6,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -29,6 +30,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	logs.Request = request
 	page := helpers.GetPage(request.QueryStringParameters["page"])
 	limit := helpers.GetItemsPerPage(request.QueryStringParameters["limit"])
+	isDeleted := request.QueryStringParameters["is_deleted"]
 	groceryType := request.QueryStringParameters["type"]
 
 	var pageOffset = helpers.ComputePageOffset(page, limit)
@@ -48,9 +50,20 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			})
 	}
 
+	filterGroceryIsDeleted, err := strconv.ParseBool(isDeleted)
+	if err != nil {
+		return apigw.SingleErrorResponse(
+			http.StatusBadRequest,
+			apigw.ErrorResponseBody{
+				Message: err.Error(),
+				Code:    "INVALID_GROCERY_QUERY_PARAM_TYPE",
+			})
+	}
+
 	queries := database.New(dbPool)
 	groceries, err := queries.GetGroceries(context.Background(), database.GetGroceriesParams{
 		Column1: filterGroceryType,
+		Column4: filterGroceryIsDeleted,
 		Offset:  pageOffset,
 		Limit:   resultsPerPage,
 	})
@@ -68,7 +81,10 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			})
 	}
 
-	count, err := queries.CountGroceries(context.Background(), filterGroceryType)
+	count, err := queries.CountGroceries(context.Background(), database.CountGroceriesParams{
+		Column1: filterGroceryType,
+		Column2: filterGroceryIsDeleted,
+	})
 	if err != nil {
 		logs.Error("CountGroceries", err.Error())
 		return apigw.SingleErrorResponse(

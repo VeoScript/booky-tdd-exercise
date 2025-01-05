@@ -15,13 +15,21 @@ const countGroceries = `-- name: CountGroceries :one
 SELECT COUNT(*) 
 FROM grocery_items
 WHERE 
-  ($1::boolean IS NULL AND bought_at IS NULL) 
-  OR ($1::boolean = TRUE AND bought_at IS NOT NULL)
-  OR ($1::boolean = FALSE AND bought_at IS NULL)
+  (($2::boolean = TRUE AND deleted_at IS NOT NULL) OR ($2 = FALSE AND deleted_at IS NULL) OR $2 IS NULL)
+  AND (
+    ($1::boolean IS NULL AND bought_at IS NULL)
+    OR ($1 = TRUE AND bought_at IS NOT NULL)
+    OR ($1 = FALSE AND bought_at IS NULL)
+  )
 `
 
-func (q *Queries) CountGroceries(ctx context.Context, dollar_1 bool) (int64, error) {
-	row := q.db.QueryRow(ctx, countGroceries, dollar_1)
+type CountGroceriesParams struct {
+	Column1 bool
+	Column2 bool
+}
+
+func (q *Queries) CountGroceries(ctx context.Context, arg CountGroceriesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countGroceries, arg.Column1, arg.Column2)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -52,9 +60,12 @@ const getGroceries = `-- name: GetGroceries :many
 SELECT id, name, created_at, deleted_at, bought_at, updated_at 
 FROM grocery_items
 WHERE 
-  ($1::boolean IS NULL AND bought_at IS NULL)
-  OR ($1::boolean = TRUE AND bought_at IS NOT NULL)
-  OR ($1::boolean = FALSE AND bought_at IS NULL)  
+  (($4::boolean = TRUE AND deleted_at IS NOT NULL) OR ($4 = FALSE AND deleted_at IS NULL) OR $4 IS NULL)
+  AND (
+    ($1::boolean IS NULL AND bought_at IS NULL)
+    OR ($1 = TRUE AND bought_at IS NOT NULL)
+    OR ($1 = FALSE AND bought_at IS NULL)
+  )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
@@ -63,10 +74,16 @@ type GetGroceriesParams struct {
 	Column1 bool
 	Limit   int32
 	Offset  int32
+	Column4 bool
 }
 
 func (q *Queries) GetGroceries(ctx context.Context, arg GetGroceriesParams) ([]GroceryItem, error) {
-	rows, err := q.db.Query(ctx, getGroceries, arg.Column1, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, getGroceries,
+		arg.Column1,
+		arg.Limit,
+		arg.Offset,
+		arg.Column4,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +114,6 @@ UPDATE grocery_items
 SET 
   bought_at = $1
 WHERE id = $2
-RETURNING id, name, bought_at
 `
 
 type ToBuyParams struct {
@@ -110,12 +126,28 @@ func (q *Queries) ToBuy(ctx context.Context, arg ToBuyParams) error {
 	return err
 }
 
+const toDelete = `-- name: ToDelete :exec
+UPDATE grocery_items
+SET 
+  deleted_at = $1
+WHERE id = $2
+`
+
+type ToDeleteParams struct {
+	DeletedAt pgtype.Timestamp
+	ID        pgtype.UUID
+}
+
+func (q *Queries) ToDelete(ctx context.Context, arg ToDeleteParams) error {
+	_, err := q.db.Exec(ctx, toDelete, arg.DeletedAt, arg.ID)
+	return err
+}
+
 const toRestore = `-- name: ToRestore :exec
 UPDATE grocery_items
 SET 
   bought_at = null
 WHERE id = $1
-RETURNING id, name, bought_at
 `
 
 func (q *Queries) ToRestore(ctx context.Context, id pgtype.UUID) error {
@@ -128,7 +160,6 @@ UPDATE grocery_items
 SET 
   name = $1
 WHERE id = $2
-RETURNING id, name
 `
 
 type UpdateGroceryParams struct {
