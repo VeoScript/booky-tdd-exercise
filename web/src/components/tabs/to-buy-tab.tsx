@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import clsx from 'clsx';
 
 import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
 
@@ -43,6 +44,11 @@ function ToBuyTab(props: Props) {
   const { mutateAsync: updateToBuyMutation, isPending: isUpdatingToBuy } = useUpdateToBuy();
   const { mutateAsync: deleteGroceryMutation, isPending: isDeletingGrocery } = useDeleteGrocery();
 
+  const onResetDefault = () => {
+    setSelectedItem(null);
+    onToggleDeleteModal(false);
+  };
+
   const handleCreateGrocery = async () => {
     try {
       await createGroceryMutation({
@@ -54,11 +60,6 @@ function ToBuyTab(props: Props) {
     } catch (error) {
       console.error('CREATE_GROCERY_ERROR', error);
     }
-  };
-
-  const onResetDefault = () => {
-    setSelectedItem(null);
-    onToggleDeleteModal(false);
   };
 
   const handleEditClick = (id: string, name: string) => {
@@ -112,6 +113,7 @@ function ToBuyTab(props: Props) {
     }
   };
 
+  const isLoadingAll = isUpdatingGrocery || isUpdatingToBuy || isDeletingGrocery;
   const buttonLabel = isCreatingGrocery ? 'Adding...' : 'Add';
 
   return (
@@ -137,7 +139,11 @@ function ToBuyTab(props: Props) {
               <h2 className="text-2xl font-bold text-default-orange/50">Loading...</h2>
             </div>
           )}
-          {groceriesCount === 0 && <NoResults title="Nothing here yet..." />}
+          {groceriesCount === 0 && (
+            <div className="mt-10">
+              <NoResults title="Nothing here yet..." />
+            </div>
+          )}
           {!isLoadingGroceries && groceries && (
             <>
               {groceries.length > 0 && (
@@ -146,43 +152,48 @@ function ToBuyTab(props: Props) {
                   {groceries.map(({ ID, Name }) => (
                     <div
                       key={ID}
-                      className="flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border p-3 hover:border-default-orange"
-                    >
-                      {editingID === ID ? (
-                        <input
-                          disabled={isUpdatingGrocery || isUpdatingToBuy}
-                          type="text"
-                          value={editedName}
-                          onChange={(e) => setEditedName(e.target.value)}
-                          className="flex-grow outline-none disabled:bg-transparent"
-                        />
-                      ) : (
-                        <span>{Name}</span>
+                      className={clsx(
+                        isLoadingAll &&
+                          selectedItem?.ID === ID &&
+                          'bg-neutral-100 text-neutral-400',
+                        'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border p-3 hover:border-default-orange'
                       )}
+                    >
+                      <div className="flex gap-x-3">
+                        {isLoadingAll && selectedItem?.ID === ID && (
+                          <LoadingSpinner className="h-5 w-5" />
+                        )}
+                        {editingID === ID ? (
+                          <input
+                            disabled={isUpdatingGrocery || isUpdatingToBuy}
+                            type="text"
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            className="flex-grow outline-none disabled:bg-transparent"
+                          />
+                        ) : (
+                          <span>{Name}</span>
+                        )}
+                      </div>
                       <span className="flex flex-row items-center gap-x-3">
                         {editingID === ID && (
                           <>
-                            {isUpdatingGrocery && selectedItem?.ID === ID && (
-                              <LoadingSpinner className="h-5 w-5" />
-                            )}
-                            {!isUpdatingGrocery && (
-                              <button
-                                disabled={isUpdatingGrocery}
-                                type="button"
-                                aria-label="Save button"
-                                onClick={() => {
-                                  setSelectedItem({
-                                    ID,
-                                    Name,
-                                  });
-                                  handleSave(ID);
-                                }}
-                              >
-                                <CheckIcon className="h-5 w-5 text-default-gray hover:text-green-600 hover:opacity-50" />
-                              </button>
-                            )}
                             <button
-                              disabled={isUpdatingGrocery}
+                              disabled={isLoadingAll}
+                              type="button"
+                              aria-label="Save button"
+                              onClick={() => {
+                                setSelectedItem({
+                                  ID,
+                                  Name,
+                                });
+                                handleSave(ID);
+                              }}
+                            >
+                              <CheckIcon className="h-5 w-5 text-default-gray hover:text-green-600 hover:opacity-50" />
+                            </button>
+                            <button
+                              disabled={isLoadingAll}
                               type="button"
                               aria-label="Cancel button"
                               onClick={handleCancel}
@@ -193,51 +204,41 @@ function ToBuyTab(props: Props) {
                         )}
                         {editingID !== ID && (
                           <>
-                            {isUpdatingToBuy && selectedItem?.ID === ID && (
-                              <LoadingSpinner className="h-5 w-5" />
-                            )}
-                            {!isUpdatingToBuy && (
-                              <button
-                                type="button"
-                                aria-label="Update to buy button"
-                                onClick={() => {
-                                  setSelectedItem({
-                                    ID,
-                                    Name,
-                                  });
-                                  handleUpdateToBuy(ID);
-                                }}
-                              >
-                                <CheckIcon className="h-5 w-5 text-default-gray hover:text-default-orange hover:opacity-50" />
-                              </button>
-                            )}
                             <button
-                              disabled={isUpdatingToBuy}
+                              type="button"
+                              aria-label="Update to buy button"
+                              onClick={() => {
+                                setSelectedItem({
+                                  ID,
+                                  Name,
+                                });
+                                handleUpdateToBuy(ID);
+                              }}
+                            >
+                              <CheckIcon className="h-5 w-5 text-default-gray hover:text-default-orange hover:opacity-50" />
+                            </button>
+                            <button
+                              disabled={isLoadingAll}
                               type="button"
                               aria-label="Edit grocery list button"
                               onClick={() => handleEditClick(ID, Name)}
                             >
                               <EditIcon className="h-5 w-5 text-default-gray hover:text-blue-600 hover:opacity-50" />
                             </button>
-                            {isDeletingGrocery && selectedItem?.ID === ID && (
-                              <LoadingSpinner className="h-5 w-5" />
-                            )}
-                            {!isDeletingGrocery && (
-                              <button
-                                disabled={isDeletingGrocery}
-                                type="button"
-                                aria-label="Delete button"
-                                onClick={() => {
-                                  setSelectedItem({
-                                    ID,
-                                    Name,
-                                  });
-                                  onToggleDeleteModal(true);
-                                }}
-                              >
-                                <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
-                              </button>
-                            )}
+                            <button
+                              disabled={isLoadingAll}
+                              type="button"
+                              aria-label="Delete button"
+                              onClick={() => {
+                                setSelectedItem({
+                                  ID,
+                                  Name,
+                                });
+                                onToggleDeleteModal(true);
+                              }}
+                            >
+                              <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
+                            </button>
                           </>
                         )}
                       </span>
@@ -252,10 +253,7 @@ function ToBuyTab(props: Props) {
       <DeleteModal
         itemName={selectedItem?.Name}
         isOpen={isOpenDeleteModal}
-        onClose={() => {
-          setSelectedItem(null);
-          onToggleDeleteModal(false);
-        }}
+        onClose={onResetDefault}
         onSubmit={() => handleDeleteGrocery(String(selectedItem?.ID))}
       />
     </>
