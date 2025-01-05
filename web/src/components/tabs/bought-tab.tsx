@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import clsx from 'clsx';
 
 import { DeleteIcon, RedoIcon } from '../icons';
 
@@ -32,6 +33,11 @@ function BoughtTab(props: Props) {
   const { mutateAsync: restoreGroceryItemMutation, isPending: isRestoring } = useRestore();
   const { mutateAsync: deleteGroceryMutation, isPending: isDeletingGrocery } = useDeleteGrocery();
 
+  const onResetDefault = () => {
+    setSelectedItem(null);
+    onToggleDeleteModal(false);
+  };
+
   const handleRestore = async (id: string) => {
     try {
       await restoreGroceryItemMutation({
@@ -39,7 +45,7 @@ function BoughtTab(props: Props) {
       });
 
       refetchGrocery();
-      setSelectedItem(null);
+      onResetDefault();
     } catch (error) {
       console.error('RESTORE_GROCERY_ERROR', error);
     }
@@ -51,8 +57,8 @@ function BoughtTab(props: Props) {
         id,
       });
 
-      setSelectedItem(null);
       refetchGrocery();
+      onResetDefault();
     } catch (error) {
       console.error('DELETE_GROCERY_ERROR', error);
     }
@@ -68,7 +74,11 @@ function BoughtTab(props: Props) {
             <h2 className="text-2xl font-bold text-default-orange/50">Loading...</h2>
           </div>
         )}
-        {groceriesCount === 0 && <NoResults title="Nothing here yet..." />}
+        {groceriesCount === 0 && (
+          <div className="mt-10">
+            <NoResults title="Nothing here yet..." />
+          </div>
+        )}
         {!isLoadingGroceries && groceries && (
           <>
             {groceries.length > 0 && (
@@ -77,48 +87,46 @@ function BoughtTab(props: Props) {
                 {groceries.map(({ ID, Name }) => (
                   <div
                     key={ID}
-                    className="flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border p-3 hover:border-default-orange"
+                    className={clsx(
+                      isLoadingAll && selectedItem?.ID === ID && 'bg-neutral-100 text-neutral-400',
+                      'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border p-3 hover:border-default-orange'
+                    )}
                   >
-                    <span>{Name}</span>
+                    <div className="flex gap-x-3">
+                      {isLoadingAll && selectedItem?.ID === ID && (
+                        <LoadingSpinner className="h-5 w-5" />
+                      )}
+                      <span>{Name}</span>
+                    </div>
                     <span className="flex flex-row items-center gap-x-3">
-                      {isRestoring && selectedItem?.ID === ID && (
-                        <LoadingSpinner className="h-5 w-5" />
-                      )}
-                      {!isRestoring && (
-                        <button
-                          disabled={isLoadingAll}
-                          type="button"
-                          aria-label="Restore button"
-                          onClick={() => {
-                            setSelectedItem({
-                              ID,
-                              Name,
-                            });
-                            handleRestore(ID);
-                          }}
-                        >
-                          <RedoIcon className="h-6 w-6 text-default-gray hover:text-green-500 hover:opacity-50" />
-                        </button>
-                      )}
-                      {isDeletingGrocery && selectedItem?.ID === ID && (
-                        <LoadingSpinner className="h-5 w-5" />
-                      )}
-                      {!isDeletingGrocery && (
-                        <button
-                          disabled={isLoadingAll}
-                          type="button"
-                          aria-label="Delete button"
-                          onClick={() => {
-                            setSelectedItem({
-                              ID,
-                              Name,
-                            });
-                            onToggleDeleteModal(true);
-                          }}
-                        >
-                          <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
-                        </button>
-                      )}
+                      <button
+                        disabled={isLoadingAll}
+                        type="button"
+                        aria-label="Restore button"
+                        onClick={() => {
+                          setSelectedItem({
+                            ID,
+                            Name,
+                          });
+                          handleRestore(ID);
+                        }}
+                      >
+                        <RedoIcon className="h-6 w-6 text-default-gray hover:text-green-500 hover:opacity-50" />
+                      </button>
+                      <button
+                        disabled={isLoadingAll}
+                        type="button"
+                        aria-label="Delete button"
+                        onClick={() => {
+                          setSelectedItem({
+                            ID,
+                            Name,
+                          });
+                          onToggleDeleteModal(true);
+                        }}
+                      >
+                        <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
+                      </button>
                     </span>
                   </div>
                 ))}
