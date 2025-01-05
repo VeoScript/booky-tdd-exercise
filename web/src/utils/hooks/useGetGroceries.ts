@@ -41,10 +41,10 @@ type QueryParams = {
 };
 
 async function getGroceries(params: Params) {
-  const { type, page = 1, limit } = params;
+  const { type, page = 1, limit = 20 } = params;
 
   const response = await fetch(
-    `${API_URL}/v1/items?type=${type}&page=${page}&limit=${limit}`
+    `${API_URL}/v1/items?type=${type}&page=${page}&limit=${limit}&is_deleted=false`
   );
 
   if (!response.ok) {

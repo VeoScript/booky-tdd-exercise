@@ -11,12 +11,15 @@ import { GroceriesResponse } from '../../utils/hooks/useGetGroceries';
 import { useCreateGrocery } from '../../utils/hooks/useCreateGrocery';
 import { useUpdateGrocery } from '../../utils/hooks/useUpdateGrocery';
 import { useUpdateToBuy } from '../../utils/hooks/useUpdateToBuy';
+import { useDeleteGrocery } from '../../utils/hooks/useDeleteGrocery';
 
 interface Props {
   data: GroceriesResponse | undefined;
   isLoadingGroceries: boolean;
   refetchGrocery: () => void;
 }
+
+const DATE_NOW_FORMATTED = dayjs(new Date()).toISOString();
 
 function ToBuyTab(props: Props) {
   const { data, isLoadingGroceries, refetchGrocery } = props;
@@ -35,6 +38,8 @@ function ToBuyTab(props: Props) {
     useUpdateGrocery();
   const { mutateAsync: updateToBuyMutation, isPending: isUpdatingToBuy } =
     useUpdateToBuy();
+  const { mutateAsync: deleteGroceryMutation, isPending: isDeletingGrocery } =
+    useDeleteGrocery();
 
   const handleEditClick = (id: string, name: string) => {
     setEditingID(id);
@@ -78,13 +83,27 @@ function ToBuyTab(props: Props) {
 
   const handleUpdateToBuy = async (id: string) => {
     try {
-      const boughtAt = dayjs(new Date()).toISOString();
-
       setLoadingID(id);
 
       await updateToBuyMutation({
         id,
-        bought_at: boughtAt,
+        bought_at: DATE_NOW_FORMATTED,
+      });
+
+      setLoadingID(null);
+      refetchGrocery();
+    } catch (error) {
+      console.error('CREATE_GROCERY_ERROR', error);
+    }
+  };
+
+  const handleDeleteGrocery = async (id: string) => {
+    try {
+      setLoadingID(id);
+
+      await deleteGroceryMutation({
+        id,
+        deleted_at: DATE_NOW_FORMATTED,
       });
 
       setLoadingID(null);
@@ -95,7 +114,10 @@ function ToBuyTab(props: Props) {
   };
 
   const isLoadingAll =
-    isCreatingGrocery || isUpdatingGrocery || isUpdatingToBuy;
+    isCreatingGrocery ||
+    isUpdatingGrocery ||
+    isUpdatingToBuy ||
+    isDeletingGrocery;
   const buttonLabel = isCreatingGrocery ? 'Adding...' : 'Add';
 
   return (
@@ -189,7 +211,12 @@ function ToBuyTab(props: Props) {
                               >
                                 <EditIcon className="h-5 w-5 text-default-gray hover:text-blue-600 hover:opacity-50" />
                               </button>
-                              <button type="button" aria-label="Delete button">
+                              <button
+                                disabled={isDeletingGrocery}
+                                type="button"
+                                aria-label="Delete button"
+                                onClick={() => handleDeleteGrocery(ID)}
+                              >
                                 <DeleteIcon className="h-5 w-5 text-default-gray hover:text-default-red hover:opacity-50" />
                               </button>
                             </>
