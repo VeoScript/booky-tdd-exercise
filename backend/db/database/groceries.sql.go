@@ -112,34 +112,25 @@ func (q *Queries) GetGroceries(ctx context.Context, arg GetGroceriesParams) ([]G
 const toBuy = `-- name: ToBuy :exec
 UPDATE grocery_items
 SET 
-  bought_at = $1
-WHERE id = $2
+  bought_at = NOW(),
+  updated_at = NOW()
+WHERE id = $1
 `
 
-type ToBuyParams struct {
-	BoughtAt pgtype.Timestamp
-	ID       pgtype.UUID
-}
-
-func (q *Queries) ToBuy(ctx context.Context, arg ToBuyParams) error {
-	_, err := q.db.Exec(ctx, toBuy, arg.BoughtAt, arg.ID)
+func (q *Queries) ToBuy(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, toBuy, id)
 	return err
 }
 
 const toDelete = `-- name: ToDelete :exec
 UPDATE grocery_items
 SET 
-  deleted_at = $1
-WHERE id = $2
+  deleted_at = NOW()
+WHERE id = $1
 `
 
-type ToDeleteParams struct {
-	DeletedAt pgtype.Timestamp
-	ID        pgtype.UUID
-}
-
-func (q *Queries) ToDelete(ctx context.Context, arg ToDeleteParams) error {
-	_, err := q.db.Exec(ctx, toDelete, arg.DeletedAt, arg.ID)
+func (q *Queries) ToDelete(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, toDelete, id)
 	return err
 }
 
@@ -158,7 +149,8 @@ func (q *Queries) ToRestore(ctx context.Context, id pgtype.UUID) error {
 const updateGrocery = `-- name: UpdateGrocery :exec
 UPDATE grocery_items
 SET 
-  name = $1
+  name = $1,
+  updated_at = NOW()
 WHERE id = $2
 `
 

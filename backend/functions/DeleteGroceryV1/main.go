@@ -4,7 +4,6 @@ import (
 	"backend/db/database"
 	"backend/helpers"
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -49,30 +48,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		)
 	}
 
-	grocery := Grocery{}
-	if err := json.Unmarshal([]byte(request.Body), &grocery); err != nil {
-		logs.Error("json.Unmarshal", err.Error())
-		return apigw.SingleErrorResponse(
-			http.StatusBadRequest,
-			apigw.ErrorResponseBody{
-				Message: err.Error(),
-				Code:    "TO_DELETE_GROCERY_PAYLOAD_ERROR",
-			},
-		)
-	}
-
-	var deletedAt pgtype.Timestamp
-	if grocery.DeletedAt.IsZero() {
-		deletedAt = pgtype.Timestamp{}
-	} else {
-		deletedAt.Scan(grocery.DeletedAt)
-	}
-
 	queries := database.New(dbPool)
-	err = queries.ToDelete(context.Background(), database.ToDeleteParams{
-		ID:        uuid,
-		DeletedAt: deletedAt,
-	})
+	err = queries.ToDelete(context.Background(), uuid)
 	if err != nil {
 		logs.Error("TO_DELETE_GROCERY_QUERY_ERROR", err.Error())
 		return apigw.SingleErrorResponse(

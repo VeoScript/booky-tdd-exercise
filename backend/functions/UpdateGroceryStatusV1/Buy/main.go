@@ -4,7 +4,6 @@ import (
 	"backend/db/database"
 	"backend/helpers"
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -49,30 +48,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		)
 	}
 
-	grocery := Grocery{}
-	if err := json.Unmarshal([]byte(request.Body), &grocery); err != nil {
-		logs.Error("json.Unmarshal", err.Error())
-		return apigw.SingleErrorResponse(
-			http.StatusBadRequest,
-			apigw.ErrorResponseBody{
-				Message: err.Error(),
-				Code:    "TO_BUY_GROCERY_PAYLOAD_ERROR",
-			},
-		)
-	}
-
-	var boughtAt pgtype.Timestamp
-	if grocery.BoughtAt.IsZero() {
-		boughtAt = pgtype.Timestamp{}
-	} else {
-		boughtAt.Scan(grocery.BoughtAt)
-	}
-
 	queries := database.New(dbPool)
-	err = queries.ToBuy(context.Background(), database.ToBuyParams{
-		ID:       uuid,
-		BoughtAt: boughtAt,
-	})
+	err = queries.ToBuy(context.Background(), uuid)
 	if err != nil {
 		logs.Error("TO_BUY_GROCERY_QUERY_ERROR", err.Error())
 		return apigw.SingleErrorResponse(
