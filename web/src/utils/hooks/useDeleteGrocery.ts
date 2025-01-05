@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 type Payload = {
   id: string;
-  deleted_at: string;
 };
 
 export type MutationParams = {
@@ -16,15 +15,12 @@ export type MutationParams = {
 };
 
 export const deleteGrocery = async (payload: Payload): Promise<Groceries> => {
-  const { id, deleted_at } = payload;
+  const { id } = payload;
 
   const url = `${API_URL}/v1/items/${id}/delete`;
 
   const response = await fetch(url, {
     method: 'DELETE',
-    body: JSON.stringify({
-      deleted_at,
-    }),
     headers: {
       'Content-type': 'application/json',
     },

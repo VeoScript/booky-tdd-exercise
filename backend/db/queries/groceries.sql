@@ -8,7 +8,7 @@ WHERE
     OR ($1 = TRUE AND bought_at IS NOT NULL)
     OR ($1 = FALSE AND bought_at IS NULL)
   )
-ORDER BY created_at DESC
+ORDER BY updated_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: CountGroceries :one
@@ -31,14 +31,16 @@ RETURNING *;
 -- name: UpdateGrocery :exec
 UPDATE grocery_items
 SET 
-  name = $1
+  name = $1,
+  updated_at = NOW()
 WHERE id = $2;
 
 -- name: ToBuy :exec
 UPDATE grocery_items
 SET 
-  bought_at = $1
-WHERE id = $2;
+  bought_at = NOW(),
+  updated_at = NOW()
+WHERE id = $1;
 
 -- name: ToRestore :exec
 UPDATE grocery_items
@@ -49,5 +51,5 @@ WHERE id = $1;
 -- name: ToDelete :exec
 UPDATE grocery_items
 SET 
-  deleted_at = $1
-WHERE id = $2;
+  deleted_at = NOW()
+WHERE id = $1;

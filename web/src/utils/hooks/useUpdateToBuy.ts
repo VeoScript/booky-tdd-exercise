@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 type Payload = {
   id: string;
-  bought_at: string;
 };
 
 export type MutationParams = {
@@ -16,15 +15,12 @@ export type MutationParams = {
 };
 
 export const updateToBuy = async (payload: Payload): Promise<Groceries> => {
-  const { id, bought_at } = payload;
+  const { id } = payload;
 
   const url = `${API_URL}/v1/items/${id}/buy`;
 
   const response = await fetch(url, {
     method: 'POST',
-    body: JSON.stringify({
-      bought_at,
-    }),
     headers: {
       'Content-type': 'application/json',
     },

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import dayjs from 'dayjs';
 
 import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
 
@@ -18,8 +17,6 @@ interface Props {
   isLoadingGroceries: boolean;
   refetchGrocery: () => void;
 }
-
-const DATE_NOW_FORMATTED = dayjs(new Date()).toISOString();
 
 function ToBuyTab(props: Props) {
   const { data, isLoadingGroceries, refetchGrocery } = props;
@@ -87,7 +84,6 @@ function ToBuyTab(props: Props) {
 
       await updateToBuyMutation({
         id,
-        bought_at: DATE_NOW_FORMATTED,
       });
 
       setLoadingID(null);
@@ -103,7 +99,6 @@ function ToBuyTab(props: Props) {
 
       await deleteGroceryMutation({
         id,
-        deleted_at: DATE_NOW_FORMATTED,
       });
 
       setLoadingID(null);
