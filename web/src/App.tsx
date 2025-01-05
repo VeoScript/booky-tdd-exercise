@@ -30,18 +30,10 @@ function App() {
         >
           <Header />
           {activeTab === 'to-buy' && (
-            <ToBuyTab
-              data={groceries}
-              isLoadingGroceries={isLoading}
-              refetchGrocery={refetch}
-            />
+            <ToBuyTab data={groceries} isLoadingGroceries={isLoading} refetchGrocery={refetch} />
           )}
           {activeTab === 'bought' && (
-            <BoughtTab
-              data={groceries}
-              isLoadingGroceries={isLoading}
-              refetchGrocery={refetch}
-            />
+            <BoughtTab data={groceries} isLoadingGroceries={isLoading} refetchGrocery={refetch} />
           )}
         </div>
       </main>
