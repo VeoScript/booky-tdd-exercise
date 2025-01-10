@@ -3,20 +3,44 @@ import { Helmet } from 'react-helmet-async';
 import Header from './components/header';
 import ToBuyTab from './components/tabs/to-buy-tab';
 import BoughtTab from './components/tabs/bought-tab';
+import PaginationBar from './components/pagination-bar';
 
 import { useTabStore } from './utils/stores/useTabStore';
-import { useGetGroceries } from './utils/hooks/useGetGroceries';
+import { useGetGroceries } from './utils/hooks/fetch/useGetGroceries';
+import { useQueryParams } from './utils/hooks/useQueryParams';
+import { toTop } from './utils/functions/scrollTo';
+
+export type FilterParams = {
+  page?: string;
+};
 
 function App() {
   const { activeTab } = useTabStore();
+
+  const { params, updateParams } = useQueryParams<FilterParams>();
+
+  const { page: currentPage } = params;
 
   const {
     data: groceries,
     isLoading,
     refetch,
   } = useGetGroceries({
+    page: Number(currentPage),
     type: activeTab,
   });
+
+  const groceriesCount = Number(groceries?.metadata?.total_count);
+  const groceriesCurrentPage = Number(groceries?.metadata?.page);
+  const groceriesMaxPage = Number(groceries?.metadata?.max_page);
+
+  const handleChangePage = (page: number) => {
+    toTop('app-container');
+
+    updateParams({
+      page: String(page),
+    });
+  };
 
   return (
     <>
@@ -30,10 +54,29 @@ function App() {
         >
           <Header />
           {activeTab === 'to-buy' && (
-            <ToBuyTab data={groceries} isLoadingGroceries={isLoading} refetchGrocery={refetch} />
+            <ToBuyTab
+              data={groceries}
+              groceriesCount={groceriesCount}
+              isLoadingGroceries={isLoading}
+              refetchGrocery={refetch}
+            />
           )}
           {activeTab === 'bought' && (
-            <BoughtTab data={groceries} isLoadingGroceries={isLoading} refetchGrocery={refetch} />
+            <BoughtTab
+              data={groceries}
+              groceriesCount={groceriesCount}
+              isLoadingGroceries={isLoading}
+              refetchGrocery={refetch}
+            />
+          )}
+          {!isLoading && groceriesCount !== 0 && (
+            <div className="pb-5">
+              <PaginationBar
+                currentPage={groceriesCurrentPage}
+                totalPages={groceriesMaxPage}
+                onPageChange={handleChangePage}
+              />
+            </div>
           )}
         </div>
       </main>

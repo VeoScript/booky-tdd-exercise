@@ -1,37 +1,47 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import clsx from 'clsx';
 
 import { DeleteIcon, RedoIcon } from '../icons';
 
 import LoadingSpinner from '../loading-spinner';
+import ListSkeleton from '../skeletons/list-skeleton';
 import NoResults from '../no-results';
 import DeleteModal from '../../components/modals/delete-modal';
 
 import { SelectedGroceryItem } from './to-buy-tab';
-import { GroceriesResponse } from '../../utils/hooks/useGetGroceries';
+import { GroceriesResponse } from '../../utils/hooks/fetch/useGetGroceries';
 
 import { useDeleteModalState } from '../../utils/stores/useModalStore';
-import { useRestore } from '../../utils/hooks/useRestore';
-import { useDeleteGrocery } from '../../utils/hooks/useDeleteGrocery';
+import { useRestore } from '../../utils/hooks/fetch/useRestore';
+import { useDeleteGrocery } from '../../utils/hooks/fetch/useDeleteGrocery';
 
 interface Props {
   data: GroceriesResponse | undefined;
+  groceriesCount: number;
   isLoadingGroceries: boolean;
   refetchGrocery: () => void;
 }
 
 function BoughtTab(props: Props) {
-  const { data, isLoadingGroceries, refetchGrocery } = props;
+  const { data, groceriesCount, isLoadingGroceries, refetchGrocery } = props;
 
   const groceries = data?.results;
-  const groceriesCount = data?.metadata?.total_count;
 
   const [selectedItem, setSelectedItem] = useState<SelectedGroceryItem>(null);
 
   const { isOpen: isOpenDeleteModal, onToggle: onToggleDeleteModal } = useDeleteModalState();
 
-  const { mutateAsync: restoreGroceryItemMutation, isPending: isRestoring } = useRestore();
-  const { mutateAsync: deleteGroceryMutation, isPending: isDeletingGrocery } = useDeleteGrocery();
+  const {
+    mutateAsync: restoreGroceryItemMutation,
+    isPending: isRestoring,
+    isError: isErrorRestoring,
+  } = useRestore();
+  const {
+    mutateAsync: deleteGroceryMutation,
+    isPending: isDeletingGrocery,
+    isError: isErrorDeletingGrocery,
+  } = useDeleteGrocery();
 
   const onResetDefault = () => {
     setSelectedItem(null);
@@ -47,6 +57,7 @@ function BoughtTab(props: Props) {
       refetchGrocery();
       onResetDefault();
     } catch (error) {
+      toast.error(`Error while restoring ${selectedItem?.Name} (${error})`);
       console.error('RESTORE_GROCERY_ERROR', error);
     }
   };
@@ -60,20 +71,18 @@ function BoughtTab(props: Props) {
       refetchGrocery();
       onResetDefault();
     } catch (error) {
+      toast.error(`Error while deleting ${selectedItem?.Name} (${error})`);
       console.error('DELETE_GROCERY_ERROR', error);
     }
   };
 
   const isLoadingAll = isRestoring || isDeletingGrocery;
+  const isErrorAll = isErrorRestoring || isErrorDeletingGrocery;
 
   return (
     <>
-      <div className="flex h-full w-full flex-col gap-y-10 p-3">
-        {isLoadingGroceries && (
-          <div className="flex w-full flex-col items-center justify-center">
-            <h2 className="text-2xl font-bold text-default-orange/50">Loading...</h2>
-          </div>
-        )}
+      <div className="flex w-full flex-col gap-y-10 p-3">
+        {isLoadingGroceries && <ListSkeleton />}
         {groceriesCount === 0 && (
           <div className="mt-10">
             <NoResults title="Nothing here yet..." />
@@ -89,7 +98,10 @@ function BoughtTab(props: Props) {
                     key={ID}
                     className={clsx(
                       isLoadingAll && selectedItem?.ID === ID && 'bg-neutral-100 text-neutral-400',
-                      'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border p-3 hover:border-default-orange'
+                      isErrorAll &&
+                        selectedItem?.ID === ID &&
+                        'border-red-500 focus-within:border-red-500 hover:border-red-500',
+                      'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border-2 p-3 focus-within:border-default-orange hover:border-default-orange'
                     )}
                   >
                     <div className="flex gap-x-3">

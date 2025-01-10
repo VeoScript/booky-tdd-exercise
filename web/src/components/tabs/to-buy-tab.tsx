@@ -1,22 +1,26 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import clsx from 'clsx';
 
 import { CheckIcon, ClearIcon, DeleteIcon, EditIcon } from '../icons';
 
 import LoadingSpinner from '../loading-spinner';
 import InputWithButton from '../inputs/input-with-button';
+import ListSkeleton from '../skeletons/list-skeleton';
 import NoResults from '../no-results';
 import DeleteModal from '../../components/modals/delete-modal';
 
-import { GroceriesResponse } from '../../utils/hooks/useGetGroceries';
 import { useDeleteModalState } from '../../utils/stores/useModalStore';
-import { useCreateGrocery } from '../../utils/hooks/useCreateGrocery';
-import { useUpdateGrocery } from '../../utils/hooks/useUpdateGrocery';
-import { useUpdateToBuy } from '../../utils/hooks/useUpdateToBuy';
-import { useDeleteGrocery } from '../../utils/hooks/useDeleteGrocery';
+
+import { GroceriesResponse } from '../../utils/hooks/fetch/useGetGroceries';
+import { useCreateGrocery } from '../../utils/hooks/fetch/useCreateGrocery';
+import { useUpdateGrocery } from '../../utils/hooks/fetch/useUpdateGrocery';
+import { useUpdateToBuy } from '../../utils/hooks/fetch/useUpdateToBuy';
+import { useDeleteGrocery } from '../../utils/hooks/fetch/useDeleteGrocery';
 
 interface Props {
   data: GroceriesResponse | undefined;
+  groceriesCount: number;
   isLoadingGroceries: boolean;
   refetchGrocery: () => void;
 }
@@ -27,10 +31,9 @@ export type SelectedGroceryItem = {
 } | null;
 
 function ToBuyTab(props: Props) {
-  const { data, isLoadingGroceries, refetchGrocery } = props;
+  const { data, groceriesCount, isLoadingGroceries, refetchGrocery } = props;
 
   const groceries = data?.results;
-  const groceriesCount = data?.metadata?.total_count;
 
   const [groceryName, setGroceryName] = useState('');
   const [selectedItem, setSelectedItem] = useState<SelectedGroceryItem>(null);
@@ -39,10 +42,26 @@ function ToBuyTab(props: Props) {
 
   const { isOpen: isOpenDeleteModal, onToggle: onToggleDeleteModal } = useDeleteModalState();
 
-  const { mutateAsync: createGroceryMutation, isPending: isCreatingGrocery } = useCreateGrocery();
-  const { mutateAsync: updateGroceryMutation, isPending: isUpdatingGrocery } = useUpdateGrocery();
-  const { mutateAsync: updateToBuyMutation, isPending: isUpdatingToBuy } = useUpdateToBuy();
-  const { mutateAsync: deleteGroceryMutation, isPending: isDeletingGrocery } = useDeleteGrocery();
+  const {
+    mutateAsync: createGroceryMutation,
+    isPending: isCreatingGrocery,
+    isError: isErrorCreatingGrocery,
+  } = useCreateGrocery();
+  const {
+    mutateAsync: updateGroceryMutation,
+    isPending: isUpdatingGrocery,
+    isError: isErrorUpdatingGrocery,
+  } = useUpdateGrocery();
+  const {
+    mutateAsync: updateToBuyMutation,
+    isPending: isUpdatingToBuy,
+    isError: isErrorUpdatingToBuy,
+  } = useUpdateToBuy();
+  const {
+    mutateAsync: deleteGroceryMutation,
+    isPending: isDeletingGrocery,
+    isError: isErrorDeletingGrocery,
+  } = useDeleteGrocery();
 
   const onResetDefault = () => {
     setSelectedItem(null);
@@ -58,6 +77,7 @@ function ToBuyTab(props: Props) {
       setGroceryName('');
       refetchGrocery();
     } catch (error) {
+      toast.error(`Error while creating grocery item (${error})`);
       console.error('CREATE_GROCERY_ERROR', error);
     }
   };
@@ -78,6 +98,7 @@ function ToBuyTab(props: Props) {
       onResetDefault();
       refetchGrocery();
     } catch (error) {
+      toast.error(`Error while editing ${editedName} (${error})`);
       console.error('UPDATE_GROCERY_ERROR', error);
     }
   };
@@ -85,6 +106,7 @@ function ToBuyTab(props: Props) {
   const handleCancel = () => {
     setEditingID(null);
     setEditedName('');
+    refetchGrocery();
   };
 
   const handleUpdateToBuy = async (id: string) => {
@@ -96,6 +118,7 @@ function ToBuyTab(props: Props) {
       onResetDefault();
       refetchGrocery();
     } catch (error) {
+      toast.error(`Error while update to buy ${editedName} (${error})`);
       console.error('UPDATE_TO_BUY_GROCERY_ERROR', error);
     }
   };
@@ -109,11 +132,13 @@ function ToBuyTab(props: Props) {
       onResetDefault();
       refetchGrocery();
     } catch (error) {
+      toast.error(`Error while deleting ${editedName} (${error})`);
       console.error('DELETE_GROCERY_ERROR', error);
     }
   };
 
   const isLoadingAll = isUpdatingGrocery || isUpdatingToBuy || isDeletingGrocery;
+  const isErrorAll = isErrorUpdatingGrocery || isErrorUpdatingToBuy || isErrorDeletingGrocery;
   const buttonLabel = isCreatingGrocery ? 'Adding...' : 'Add';
 
   return (
@@ -125,20 +150,22 @@ function ToBuyTab(props: Props) {
             placeholder: 'Type something...',
             value: groceryName,
             onChange: (e) => setGroceryName(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === 'Enter') {
+                handleCreateGrocery();
+              }
+            },
           }}
           buttonProps={{
             type: 'button',
             'aria-label': 'Add grocery item',
             onClick: handleCreateGrocery,
           }}
+          isError={isErrorCreatingGrocery}
           buttonLabel={buttonLabel}
         />
         <div className="flex w-full flex-col gap-y-3">
-          {isLoadingGroceries && (
-            <div className="flex w-full flex-col items-center justify-center">
-              <h2 className="text-2xl font-bold text-default-orange/50">Loading...</h2>
-            </div>
-          )}
+          {isLoadingGroceries && <ListSkeleton />}
           {groceriesCount === 0 && (
             <div className="mt-10">
               <NoResults title="Nothing here yet..." />
@@ -156,7 +183,10 @@ function ToBuyTab(props: Props) {
                         isLoadingAll &&
                           selectedItem?.ID === ID &&
                           'bg-neutral-100 text-neutral-400',
-                        'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border p-3 hover:border-default-orange'
+                        isErrorAll &&
+                          selectedItem?.ID === ID &&
+                          'border-red-500 focus-within:border-red-500 hover:border-red-500',
+                        'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border-2 p-3 focus-within:border-default-orange hover:border-default-orange'
                       )}
                     >
                       <div className="flex gap-x-3">
