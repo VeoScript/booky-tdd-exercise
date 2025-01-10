@@ -37,6 +37,7 @@ function BoughtTab(props: Props) {
     isPending: isRestoring,
     isError: isErrorRestoring,
   } = useRestore();
+
   const {
     mutateAsync: deleteGroceryMutation,
     isPending: isDeletingGrocery,
