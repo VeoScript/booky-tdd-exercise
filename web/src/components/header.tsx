@@ -1,16 +1,22 @@
 import clsx from 'clsx';
 
+import { toTop } from '../utils/functions/scrollTo';
+
+import { FilterParams } from '../App';
 import { useTabStore } from '../utils/stores/useTabStore';
+import { useQueryParams } from '../utils/hooks/useQueryParams';
 
 function Header() {
   const { activeTab, setActiveTab } = useTabStore();
 
-  const handleChangeTab = () => {
-    const scrollableContainer = document.getElementById('app-container');
+  const { updateParams } = useQueryParams<FilterParams>();
 
-    if (scrollableContainer) {
-      scrollableContainer.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const handleChangeTab = () => {
+    updateParams({
+      page: '1',
+    });
+
+    toTop('app-container');
 
     if (activeTab === 'to-buy') {
       setActiveTab('bought');
@@ -27,8 +33,7 @@ function Header() {
           type="button"
           aria-label="To Buy Tab"
           className={clsx(
-            activeTab === 'to-buy' &&
-              'border-default-orange text-default-orange',
+            activeTab === 'to-buy' && 'border-default-orange text-default-orange',
             'upercase w-full border-b-2 pb-2'
           )}
           onClick={handleChangeTab}
@@ -39,8 +44,7 @@ function Header() {
           type="button"
           aria-label="Bought Tab"
           className={clsx(
-            activeTab === 'bought' &&
-              'border-default-orange text-default-orange',
+            activeTab === 'bought' && 'border-default-orange text-default-orange',
             'upercase w-full border-b-2 pb-2'
           )}
           onClick={handleChangeTab}

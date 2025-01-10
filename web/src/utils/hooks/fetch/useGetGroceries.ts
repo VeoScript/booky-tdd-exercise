@@ -1,9 +1,5 @@
-import {
-  QueryObserverResult,
-  RefetchOptions,
-  useQuery,
-} from '@tanstack/react-query';
-import { Tabs } from '../stores/useTabStore';
+import { QueryObserverResult, RefetchOptions, useQuery } from '@tanstack/react-query';
+import { Tabs } from '../../stores/useTabStore';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -25,6 +21,7 @@ export type Groceries = {
 export type GroceriesResponse = {
   results: Groceries[];
   metadata: {
+    max_page: number;
     page: number;
     results_per_page: number;
     total_count: number;
@@ -35,9 +32,7 @@ type QueryParams = {
   data: GroceriesResponse | undefined;
   isLoading: boolean;
   error: unknown;
-  refetch: (
-    options?: RefetchOptions
-  ) => Promise<QueryObserverResult<Response, Error>>;
+  refetch: (options?: RefetchOptions) => Promise<QueryObserverResult<Response, Error>>;
 };
 
 async function getGroceries(params: Params) {
@@ -55,10 +50,13 @@ async function getGroceries(params: Params) {
 }
 
 export const useGetGroceries = (params: Params): QueryParams => {
+  const { type, page, limit } = params;
+
   const { data, isLoading, error, refetch } = useQuery({
     queryFn: () => getGroceries(params),
-    queryKey: ['groceries', params],
+    queryKey: ['groceries', type, page, limit],
     enabled: !!params.type,
+    gcTime: 0,
   });
 
   return {

@@ -1,16 +1,23 @@
 import { InputHTMLAttributes, ButtonHTMLAttributes } from 'react';
+import clsx from 'clsx';
 
 interface InputWithButtonProps {
   inputProps?: InputHTMLAttributes<HTMLInputElement>;
   buttonProps?: ButtonHTMLAttributes<HTMLButtonElement>;
   buttonLabel?: string;
+  isError?: boolean;
 }
 
 function InputWithButton(props: InputWithButtonProps) {
-  const { inputProps, buttonProps, buttonLabel } = props;
+  const { inputProps, buttonProps, buttonLabel, isError } = props;
 
   return (
-    <div className="group flex w-full flex-row items-center overflow-hidden rounded-xl border border-default-gray bg-white focus-within:border-default-orange">
+    <div
+      className={clsx(
+        isError && 'focus-within:border-red-500',
+        'group flex w-full flex-row items-center overflow-hidden rounded-xl border-2 border-default-gray bg-white focus-within:border-default-orange'
+      )}
+    >
       <input {...inputProps} className="w-full p-3 outline-none" />
       <button
         {...buttonProps}
