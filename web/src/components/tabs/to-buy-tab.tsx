@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
@@ -18,6 +20,8 @@ import { useUpdateGrocery } from '../../utils/hooks/fetch/useUpdateGrocery';
 import { useUpdateToBuy } from '../../utils/hooks/fetch/useUpdateToBuy';
 import { useDeleteGrocery } from '../../utils/hooks/fetch/useDeleteGrocery';
 
+import { createGroceryItemValidation } from '../../utils/functions/validationSchema';
+
 interface Props {
   data: GroceriesResponse | undefined;
   groceriesCount: number;
@@ -30,15 +34,16 @@ export type SelectedGroceryItem = {
   Name: string;
 } | null;
 
+type GroceryFormValues = {
+  name: string;
+};
+
 function ToBuyTab(props: Props) {
   const { data, groceriesCount, isLoadingGroceries, refetchGrocery } = props;
 
   const groceries = data?.results;
 
-  const [groceryName, setGroceryName] = useState('');
   const [selectedItem, setSelectedItem] = useState<SelectedGroceryItem>(null);
-  const [editingID, setEditingID] = useState<string | null>(null);
-  const [editedName, setEditedName] = useState('');
 
   const { isOpen: isOpenDeleteModal, onToggle: onToggleDeleteModal } = useDeleteModalState();
 
@@ -63,18 +68,29 @@ function ToBuyTab(props: Props) {
     isError: isErrorDeletingGrocery,
   } = useDeleteGrocery();
 
+  const {
+    register,
+    handleSubmit,
+    reset: resetForm,
+    formState: { errors },
+  } = useForm<GroceryFormValues>({
+    resolver: yupResolver(createGroceryItemValidation),
+  });
+
   const onResetDefault = () => {
     setSelectedItem(null);
     onToggleDeleteModal(false);
   };
 
-  const handleCreateGrocery = async () => {
+  const handleCreateGrocery = async (formData: GroceryFormValues) => {
     try {
+      const { name } = formData;
+
       await createGroceryMutation({
-        name: groceryName,
+        name,
       });
 
-      setGroceryName('');
+      resetForm();
       refetchGrocery();
     } catch (error) {
       toast.error(`Error while creating grocery item (${error})`);
@@ -82,30 +98,28 @@ function ToBuyTab(props: Props) {
     }
   };
 
-  const handleEditClick = (id: string, name: string) => {
-    setEditingID(id);
-    setEditedName(name);
+  const handleEditClick = (ID: string, Name: string) => {
+    setSelectedItem({ ID, Name });
   };
 
   const handleSave = async (id: string) => {
     try {
       await updateGroceryMutation({
         id,
-        name: editedName,
+        name: String(selectedItem?.Name),
       });
 
-      setEditingID(null);
+      setSelectedItem(null);
       onResetDefault();
       refetchGrocery();
     } catch (error) {
-      toast.error(`Error while editing ${editedName} (${error})`);
+      toast.error(`Error while editing ${selectedItem?.Name} (${error})`);
       console.error('UPDATE_GROCERY_ERROR', error);
     }
   };
 
   const handleCancel = () => {
-    setEditingID(null);
-    setEditedName('');
+    setSelectedItem(null);
     refetchGrocery();
   };
 
@@ -118,7 +132,7 @@ function ToBuyTab(props: Props) {
       onResetDefault();
       refetchGrocery();
     } catch (error) {
-      toast.error(`Error while update to buy ${editedName} (${error})`);
+      toast.error(`Error while update to buy ${selectedItem?.Name} (${error})`);
       console.error('UPDATE_TO_BUY_GROCERY_ERROR', error);
     }
   };
@@ -132,7 +146,7 @@ function ToBuyTab(props: Props) {
       onResetDefault();
       refetchGrocery();
     } catch (error) {
-      toast.error(`Error while deleting ${editedName} (${error})`);
+      toast.error(`Error while deleting ${selectedItem?.Name} (${error})`);
       console.error('DELETE_GROCERY_ERROR', error);
     }
   };
@@ -144,26 +158,23 @@ function ToBuyTab(props: Props) {
   return (
     <>
       <div className="flex w-full flex-col gap-y-10 p-3">
-        <InputWithButton
-          inputProps={{
-            type: 'text',
-            placeholder: 'Type something...',
-            value: groceryName,
-            onChange: (e) => setGroceryName(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === 'Enter') {
-                handleCreateGrocery();
-              }
-            },
-          }}
-          buttonProps={{
-            type: 'button',
-            'aria-label': 'Add grocery item',
-            onClick: handleCreateGrocery,
-          }}
-          isError={isErrorCreatingGrocery}
-          buttonLabel={buttonLabel}
-        />
+        <form onSubmit={handleSubmit(handleCreateGrocery)} className="w-full">
+          <InputWithButton
+            inputProps={{
+              ...register('name'),
+              type: 'text',
+              id: 'name',
+              placeholder: 'Type something...',
+            }}
+            buttonProps={{
+              type: 'submit',
+              'aria-label': 'Add grocery item',
+            }}
+            isError={isErrorCreatingGrocery || !!errors.name}
+            buttonLabel={buttonLabel}
+          />
+          {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+        </form>
         <div className="flex w-full flex-col gap-y-3">
           {isLoadingGroceries && <ListSkeleton />}
           {groceriesCount === 0 && (
@@ -189,24 +200,34 @@ function ToBuyTab(props: Props) {
                         'flex w-full flex-row items-center justify-between gap-x-3 rounded-xl border-2 p-3 focus-within:border-default-orange hover:border-default-orange'
                       )}
                     >
-                      <div className="flex gap-x-3">
+                      <div className="flex w-full gap-x-3">
                         {isLoadingAll && selectedItem?.ID === ID && (
                           <LoadingSpinner className="h-5 w-5" />
                         )}
-                        {editingID === ID ? (
+                        {selectedItem?.ID === ID ? (
                           <input
                             disabled={isUpdatingGrocery || isUpdatingToBuy}
-                            type="text"
-                            value={editedName}
-                            onChange={(e) => setEditedName(e.target.value)}
                             className="flex-grow outline-none disabled:bg-transparent"
+                            type="text"
+                            value={selectedItem.Name}
+                            onChange={(e) =>
+                              setSelectedItem({
+                                ID,
+                                Name: e.target.value,
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSave(ID);
+                              }
+                            }}
                           />
                         ) : (
                           <span>{Name}</span>
                         )}
                       </div>
                       <span className="flex flex-row items-center gap-x-3">
-                        {editingID === ID && (
+                        {!isLoadingAll && selectedItem?.ID === ID && (
                           <>
                             <button
                               disabled={isLoadingAll}
@@ -232,7 +253,7 @@ function ToBuyTab(props: Props) {
                             </button>
                           </>
                         )}
-                        {editingID !== ID && (
+                        {selectedItem?.ID !== ID && (
                           <>
                             <button
                               type="button"
