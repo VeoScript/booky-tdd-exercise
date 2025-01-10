@@ -99,8 +99,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		http.StatusOK,
 		groceries,
 		map[string]any{
-			"total_count":      int(count),
-			"results_per_page": resultsPerPage,
+			"total_count":      int64(count),
+			"results_per_page": int64(resultsPerPage),
 			"page":             page,
 		},
 	)
