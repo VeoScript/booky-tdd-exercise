@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 
 import Feather from '@expo/vector-icons/Feather';
@@ -19,6 +20,7 @@ import NoResults from '../no-results';
 import ListSkeleton from '../skeletons/list-skeleton';
 import InputWithButton from '../inputs/input-with-button';
 import PaginationBar from '../pagination-bar';
+import DeleteModal from '../modals/delete-modal';
 
 import { useDeleteModalState } from '@/utils/stores/useModalStore';
 import { useFiltersState } from '@/utils/stores/useFiltersStore';
@@ -34,6 +36,7 @@ import { createGroceryItemValidation } from '@/utils/functions/validationSchema'
 interface Props {
   data: GroceriesResponse | undefined;
   isLoadingGroceries: boolean;
+  isRefetchingGroceries: boolean;
   refetchGrocery: () => void;
 }
 
@@ -47,7 +50,7 @@ type GroceryFormValues = {
 };
 
 function ToBuyTab(props: Props) {
-  const { data, isLoadingGroceries, refetchGrocery } = props;
+  const { data, isLoadingGroceries, isRefetchingGroceries, refetchGrocery } = props;
 
   const groceries = data?.results;
   const groceriesCount = Number(data?.metadata?.total_count);
@@ -164,6 +167,8 @@ function ToBuyTab(props: Props) {
 
   const handleDeleteGrocery = async (id: string) => {
     try {
+      onToggleDeleteModal(false);
+
       await deleteGroceryMutation({
         id,
       });
@@ -199,7 +204,7 @@ function ToBuyTab(props: Props) {
                 onPress: handleSubmit(handleCreateGrocery),
               }}
               buttonLabel={buttonLabel}
-              isError={!!errors?.name?.message}
+              isError={!!errors?.name?.message || isErrorCreatingGrocery}
             />
           )}
         />
@@ -320,17 +325,36 @@ function ToBuyTab(props: Props) {
   };
 
   return (
-    <FlatList
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={tw`px-3`}
-      data={groceries}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.ID.toString()}
-      ListHeaderComponent={renderHeader}
-      ListFooterComponent={renderFooter}
-      ListEmptyComponent={renderEmpty}
-    />
+    <>
+      <FlatList
+        refreshControl={
+          <RefreshControl
+            colors={['#FFF']}
+            tintColor="#FFF"
+            title="Pull to refresh"
+            titleColor="#FFF"
+            progressBackgroundColor="#E46C15"
+            refreshing={isRefetchingGroceries}
+            onRefresh={refetchGrocery}
+          />
+        }
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={tw`px-3`}
+        data={groceries}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.ID.toString()}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+      />
+      <DeleteModal
+        itemName={selectedItem?.Name}
+        isOpen={isOpenDeleteModal}
+        onClose={onResetDefault}
+        onSubmit={() => handleDeleteGrocery(String(selectedItem?.ID))}
+      />
+    </>
   );
 }
 
