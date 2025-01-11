@@ -13,6 +13,7 @@ export default function Groceries() {
   const {
     data: groceries,
     isLoading,
+    isRefetching,
     refetch,
   } = useGetGroceries({
     page,
@@ -23,10 +24,20 @@ export default function Groceries() {
   return (
     <MainLayout>
       {type === 'to-buy' && (
-        <ToBuyTab data={groceries} isLoadingGroceries={isLoading} refetchGrocery={refetch} />
+        <ToBuyTab
+          data={groceries}
+          isLoadingGroceries={isLoading}
+          isRefetchingGroceries={isRefetching}
+          refetchGrocery={refetch}
+        />
       )}
       {type === 'bought' && (
-        <BoughtTab data={groceries} isLoadingGroceries={isLoading} refetchGrocery={refetch} />
+        <BoughtTab
+          data={groceries}
+          isLoadingGroceries={isLoading}
+          isRefetchingGroceries={isRefetching}
+          refetchGrocery={refetch}
+        />
       )}
     </MainLayout>
   );

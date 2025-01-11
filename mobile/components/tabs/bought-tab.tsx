@@ -2,12 +2,12 @@ import tw from '@/styles/tailwind';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  TextInput,
   ToastAndroid,
   View,
   Text,
   TouchableOpacity,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 
 import Feather from '@expo/vector-icons/Feather';
@@ -16,6 +16,7 @@ import Header from '../header';
 import NoResults from '../no-results';
 import ListSkeleton from '../skeletons/list-skeleton';
 import PaginationBar from '../pagination-bar';
+import DeleteModal from '../modals/delete-modal';
 
 import { useDeleteModalState } from '@/utils/stores/useModalStore';
 import { useFiltersState } from '@/utils/stores/useFiltersStore';
@@ -27,6 +28,7 @@ import { useDeleteGrocery } from '@/utils/hooks/fetch/useDeleteGrocery';
 interface Props {
   data: GroceriesResponse | undefined;
   isLoadingGroceries: boolean;
+  isRefetchingGroceries: boolean;
   refetchGrocery: () => void;
 }
 
@@ -35,12 +37,8 @@ export type SelectedGroceryItem = {
   Name: string;
 } | null;
 
-type GroceryFormValues = {
-  name: string;
-};
-
 function BoughtTab(props: Props) {
-  const { data, isLoadingGroceries, refetchGrocery } = props;
+  const { data, isLoadingGroceries, isRefetchingGroceries, refetchGrocery } = props;
 
   const groceries = data?.results;
   const groceriesCount = Number(data?.metadata?.total_count);
@@ -166,44 +164,67 @@ function BoughtTab(props: Props) {
           <Text style={tw`text-base`}>{Name}</Text>
         </View>
         <View style={tw`flex-row items-center gap-x-3`}>
-          <TouchableOpacity
-            disabled={isLoadingAll}
-            onPress={() => {
-              setSelectedItem({
-                ID,
-                Name,
-              });
-              handleRestore(ID);
-            }}
-          >
-            <Feather name="refresh-cw" size={20} style={tw`text-green-500`} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            disabled={isLoadingAll}
-            onPress={() => {
-              setSelectedItem({ ID, Name });
-              onToggleDeleteModal(true);
-            }}
-          >
-            <Feather name="trash" size={20} style={tw`text-default-red`} />
-          </TouchableOpacity>
+          {selectedItem?.ID !== ID && (
+            <>
+              <TouchableOpacity
+                disabled={isLoadingAll}
+                onPress={() => {
+                  setSelectedItem({
+                    ID,
+                    Name,
+                  });
+                  handleRestore(ID);
+                }}
+              >
+                <Feather name="refresh-cw" size={20} style={tw`text-green-500`} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={isLoadingAll}
+                onPress={() => {
+                  setSelectedItem({ ID, Name });
+                  onToggleDeleteModal(true);
+                }}
+              >
+                <Feather name="trash" size={20} style={tw`text-default-red`} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     );
   };
 
   return (
-    <FlatList
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={tw`px-3`}
-      data={groceries}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.ID.toString()}
-      ListHeaderComponent={renderHeader}
-      ListFooterComponent={renderFooter}
-      ListEmptyComponent={renderEmpty}
-    />
+    <>
+      <FlatList
+        refreshControl={
+          <RefreshControl
+            colors={['#FFF']}
+            tintColor="#FFF"
+            title="Pull to refresh"
+            titleColor="#FFF"
+            progressBackgroundColor="#E46C15"
+            refreshing={isRefetchingGroceries}
+            onRefresh={refetchGrocery}
+          />
+        }
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={tw`px-3`}
+        data={groceries}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.ID.toString()}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+      />
+      <DeleteModal
+        itemName={selectedItem?.Name}
+        isOpen={isOpenDeleteModal}
+        onClose={onResetDefault}
+        onSubmit={() => handleDeleteGrocery(String(selectedItem?.ID))}
+      />
+    </>
   );
 }
 

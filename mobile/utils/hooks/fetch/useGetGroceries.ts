@@ -32,6 +32,7 @@ export type GroceriesResponse = {
 type QueryParams = {
   data: GroceriesResponse | undefined;
   isLoading: boolean;
+  isRefetching: boolean;
   error: unknown;
   refetch: (options?: RefetchOptions) => Promise<QueryObserverResult<Response, Error>>;
 };
@@ -55,7 +56,7 @@ export const useGetGroceries = (params: Params): QueryParams => {
 
   const isFocused = useIsFocused();
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryFn: () => getGroceries(params),
     queryKey: ['groceries', type, page, limit],
     subscribed: isFocused,
@@ -65,6 +66,7 @@ export const useGetGroceries = (params: Params): QueryParams => {
   return {
     data,
     isLoading,
+    isRefetching,
     error,
     refetch,
   };

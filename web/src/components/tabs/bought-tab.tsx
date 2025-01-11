@@ -65,6 +65,8 @@ function BoughtTab(props: Props) {
 
   const handleDeleteGrocery = async (id: string) => {
     try {
+      onToggleDeleteModal(false);
+
       await deleteGroceryMutation({
         id,
       });
